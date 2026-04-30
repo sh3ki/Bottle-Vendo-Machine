@@ -1,16 +1,16 @@
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
+#include <WiFi.h>
+#include <WebServer.h>
 
 // --- WiFi Configuration ---
 const char* ssid = "HydroCharge_Vendo";
 const char* password = "hydrocharge"; 
 
-ESP8266WebServer server(80);
+WebServer server(80);
 
 
-const int SENSOR_PIN = D5;   
-const int RELAY_MOTOR = D1;  
-const int RELAY_QC3 = D2;    
+const int SENSOR_PIN = 14; // D5 on NodeMCU  
+const int RELAY_MOTOR = 5; // D1 on NodeMCU
+const int RELAY_QC3 = 4; // D2 on NodeMCU
 
 
 int bottleCount = 0;
