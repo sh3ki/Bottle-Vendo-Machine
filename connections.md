@@ -17,7 +17,8 @@ VOUT → 5V Power Rail
 ```
 Vin / 5V → 5V Power Rail (from DC-DC)
 GND      → Common Ground
-D5       → Infrared Sensor OUT
+D5       → Ultrasonic Sensor TRIG
+D6       → Ultrasonic Sensor ECHO (via level shifting)
 D1       → Relay Module #1 IN (Motor Relay)
 D2       → Relay Module #2 IN (USB Relay)
 ```
@@ -42,11 +43,12 @@ COM → Terminal Block Positive (12V)
 NO  → Female USB Breakout VIN
 ```
 
-## INFRARED SENSOR
+## ULTRASONIC SENSOR
 ```
 VCC  → 5V Power Rail
 GND  → Common Ground
-OUT  → NodeMCU D5
+TRIG → NodeMCU D5
+ECHO → NodeMCU D6 (use a voltage divider or level shifter)
 ```
 
 ## MOTORS
