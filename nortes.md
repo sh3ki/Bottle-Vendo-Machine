@@ -1,6 +1,6 @@
 To guarantee that electricity is only utilized when a bottle is genuinely present, the procedure is built around a Hard Trigger logic.
 
-Detection: The intake is continuously observed by the Infrared Proximity Sensor. It notifies the NodeMCU ESP8266 when it finds a bottle.
+Detection: The intake is continuously observed by the Ultrasonic Distance Sensor. It notifies the NodeMCU ESP8266 when an object is 10 cm or closer.
 
 Processing: The NodeMCU serves as the "brain," taking in the sensor signal and turning on the relay modules.
 
