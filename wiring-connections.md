@@ -168,27 +168,29 @@ USB Breakout Board Pinout (Standard):
 
 ---
 
-### 6. INFRARED PROXIMITY SENSOR
+### 6. ULTRASONIC DISTANCE SENSOR
 
 **Sensor Connection:**
 | Pin | Connection | Wire Color | Voltage |
 |-----|-----------|-----------|---------|
 | VCC | 5V Rail | Red | +5V |
 | GND | Common Ground | Black | Ground |
-| OUT/Signal | NodeMCU D5 | Yellow | 3.3V Logic |
+| TRIG | NodeMCU D5 | Yellow | 3.3V Logic |
+| ECHO | NodeMCU D6 | Blue | 5V input via divider |
 
-**Sensor Type:** Infrared Proximity Sensor (typically SR0001 or similar)
-- **Detection Range**: ~2-8cm (adjustable potentiometer on module)
-- **Logic Output**: Active LOW (sensor pulls to ground when object detected)
-- **NodeMCU Pin D5 Configuration**: INPUT_PULLUP (enables internal pull-up resistor)
+**Sensor Type:** Ultrasonic sensor (HC-SR04 or similar)
+- **Detection Range**: trigger process when object is at 10cm or below
+- **Logic Output**: Trigger pulse on TRIG, time-of-flight read on ECHO
+- **NodeMCU Pin D5 Configuration**: OUTPUT
+- **NodeMCU Pin D6 Configuration**: INPUT with 5V-to-3.3V level shifting on ECHO
 
-**Sensor Debounce Logic (from code):**
+**Distance Logic (from code):**
 ```
 When object detected:
-1. Sensor OUT goes LOW
-2. 150ms delay for debounce
-3. If still LOW, then object is confirmed
-4. Trigger motor activation
+1. TRIG pulse sent
+2. ECHO pulse duration measured
+3. Distance computed in cm
+4. If distance is 10cm or less, trigger motor activation
 ```
 
 ---
@@ -219,7 +221,8 @@ When object detected:
 ### Used Pins in HydroCharge System
 | Pin | Function | Usage | Current Draw |
 |-----|----------|-------|--------------|
-| D5 | Infrared Sensor Input | Bottle Detection | ~5mA max |
+| D5 | Ultrasonic TRIG Output | Bottle Detection | ~5mA max |
+| D6 | Ultrasonic ECHO Input | Bottle Detection | 5V -> 3.3V level shift required |
 | D1 | Motor Relay Signal | Drive Motor Control | ~40mA |
 | D2 | USB Relay Signal | Charging Port Control | ~40mA |
 | GND | Common Ground | All circuits | Reference |
@@ -309,29 +312,28 @@ When bottle detected:
 
 ## Sensor Circuit
 
-### Infrared Proximity Sensor Details
+### Ultrasonic Distance Sensor Details
 ```
-Sensor Module (SR0001 typical)
+Sensor Module (HC-SR04 typical)
 ┌──────────────────┐
-│  VCC  GND  OUT   │
+│ VCC  GND  TRIG  ECHO │
 └──────────────────┘
 
 VCC   → 5V Rail (DC-DC Converter output)
 GND   → Common Ground
-OUT   → NodeMCU D5 (with INPUT_PULLUP enabled)
+TRIG  → NodeMCU D5
+ECHO  → NodeMCU D6 through a voltage divider or level shifter
 ```
 
 ### Detection Logic Flow
 ```
 Object NOT Detected:
-  Sensor OUT → FLOAT (HIGH via pull-up)
-  NodeMCU D5 reads HIGH
-  
+    ECHO pulse indicates distance greater than 10cm
+
 Object Detected:
-  Sensor OUT → PULLED TO GROUND (LOW)
-  NodeMCU D5 reads LOW
-  Debounce wait: 150ms
-  If still LOW → Bottle confirmed!
+    ECHO pulse indicates distance of 10cm or less
+    150ms confirmation delay
+    If still 10cm or less → Bottle confirmed!
   Activation: digitalWrite(RELAY_MOTOR, HIGH)
 ```
 
