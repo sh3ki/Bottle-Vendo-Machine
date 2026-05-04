@@ -8,7 +8,7 @@ Jumper wires
 Octocupler
 DC DC Buck Converter
 Terminal Blocks
-Infrared Proximity Sensor
+Ultrasonic Distance Sensor
 12V lithium rechargeable battery
 female usb breakout board
 
@@ -17,7 +17,7 @@ esp8266
 12v motor
 dc dc buck converter 
 2 bestep JQC3F-05VDC-C relay module
-Infrared Proximity Sensor
+Ultrasonic Distance Sensor
 12V lithium rechargeable battery
 female usb breakout board
 toggle switch
@@ -65,7 +65,7 @@ MISSING CONNECTIONS:
 - ⚠️ **No relay control** - relays VCC, GND, IN pins are floating
 - ⚠️ **Motor cannot turn on** - not connected to relay output
 - ⚠️ **ESP8266 cannot control anything** - no connections to relay IN pins
-- ⚠️ **Sensor not wired** - infrared sensor has no output to ESP8266
+- ⚠️ **Sensor not wired** - ultrasonic TRIG/ECHO not connected to ESP8266
 - ⚠️ **Poor ground distribution** - common ground point missing
 - ⚠️ **No power smoothing** - capacitor not installed
 
@@ -76,12 +76,11 @@ MISSING CONNECTIONS:
 ### MASTER POWER DISTRIBUTION
 ```
 Battery (+12V) 
-  ↓ (Through Toggle Switch)
   ├→ Capacitor 4700uF Positive (for power smoothing)
   ├→ Terminal Block Positive Rail
   │
 Battery (-/GND)
-  ↓ (Through Toggle Switch)
+  ↓ (Toggle Switch BETWEEN BATTERY AND TERMINAL BLOCK)
   ├→ Capacitor 4700uF Negative
   ├→ Terminal Block Negative Rail
   └→ COMMON GROUND POINT (one point for all grounds)
@@ -109,7 +108,7 @@ Current Usage:
 **All 12V components powered directly from Terminal Block:**
 - Relay #1 VCC → Terminal Block 12V
 - Relay #2 VCC → Terminal Block 12V  
-- Sensor VCC → Terminal Block 12V
+- Ultrasonic Sensor VCC → 5V Rail (from DC-DC)
 - USB Breakout IN+ → Relay #2 NO (controlled charging)
 
 ### ESP8266 POWER
@@ -124,7 +123,8 @@ GND → Connected through USB cable common ground
 ```
 D1 (GPIO5)  → Relay #1 IN (Motor control)
 D2 (GPIO4)  → Relay #2 IN (USB breakout control)
-D5 (GPIO14) → Infrared Sensor OUT
+D5 (GPIO14) → Ultrasonic TRIG
+D6 (GPIO12) → Ultrasonic ECHO (via voltage divider)
 ```
 
 ### RELAY #1 (MOTOR CONTROL - 10-30VDC, 10A @ 28VDC)
@@ -152,14 +152,15 @@ NO  → USB Breakout IN+ (for smart charging control)
 - When D2 = LOW: Relay opens, USB Breakout loses power, charging stops
 - Software can set charging time limits
 
-### INFRARED SENSOR (6-30V Input)
+### ULTRASONIC SENSOR (HC-SR04 or similar)
 ```
-VCC → Terminal Block Positive (12V) ✓ SAFE
+VCC → 5V Rail from DC-DC Converter
 GND → Terminal Block Negative (GND)
-OUT → NodeMCU D5
+TRIG → NodeMCU D5
+ECHO → NodeMCU D6 (through voltage divider / level shifter)
 ```
 
-**✓ Can be powered directly from 12V Terminal Block**
+**⚠️ ECHO pin must be reduced to 3.3V before entering ESP8266 D6**
 
 ### MOTORS
 ```
@@ -214,7 +215,8 @@ USB Port → Device charging (internally regulated to 5V)
 - [ ] ESP8266 GND via USB cable return (common ground)
 - [ ] ESP8266 D1 to Relay #1 IN
 - [ ] ESP8266 D2 to Relay #2 IN
-- [ ] ESP8266 D5 to Infrared Sensor OUT
+- [ ] ESP8266 D5 to Ultrasonic TRIG
+- [ ] ESP8266 D6 to Ultrasonic ECHO (through voltage divider)
 
 **RELAYS & SWITCHES:**
 - [ ] Relay #1 VCC to Terminal Block Positive (12V) ✓ UPDATED
@@ -234,9 +236,10 @@ USB Port → Device charging (internally regulated to 5V)
 - [ ] USB Port outputs safe 5V for device charging (when Relay #2 is active)
 
 **SENSORS & OUTPUTS:**
-- [ ] Infrared Sensor VCC to Terminal Block Positive (12V)
-- [ ] Infrared Sensor GND to Terminal Block Negative (GND)
-- [ ] Infrared Sensor OUT to ESP8266 D5
+- [ ] Ultrasonic Sensor VCC to 5V Rail (DC-DC output)
+- [ ] Ultrasonic Sensor GND to Terminal Block Negative (GND)
+- [ ] Ultrasonic TRIG to ESP8266 D5
+- [ ] Ultrasonic ECHO to ESP8266 D6 (through voltage divider)
 - [ ] Motor (-) to Terminal Block Negative (GND)
 
 **IMPORTANT NOTES:**
@@ -302,9 +305,28 @@ USB Port → Device charging (internally regulated to 5V)
 - [ ] USB Port → Device charging cable
 
 ### STEP 10: Connect Sensor
-- [ ] Sensor VCC → Terminal Block Positive (12V)
+- [ ] Sensor VCC → 5V Rail (DC-DC output)
 - [ ] Sensor GND → Terminal Block Negative (GND)
-- [ ] Sensor OUT → ESP8266 D5
+- [ ] Sensor TRIG → ESP8266 D5
+- [ ] Sensor ECHO → ESP8266 D6 using three 1 kΩ resistors (1k/2k divider)
+
+Wiring for three 1 kΩ resistors (safe ~3.33V divider):
+
+```
+HC-SR04 ECHO ---[R1 = 1k]---*DIVIDER NODE*---[R2 = 1k]---[R3 = 1k]--- GND
+                                 |
+                                 +-----> (optional 220Ω) ----> ESP8266 D6
+```
+
+- Connect `R1` (1 kΩ) between the HC-SR04 ECHO pin and the divider node.
+- Connect `R2` and `R3` (each 1 kΩ) in series between the divider node and GND (total 2 kΩ to GND).
+- From the divider node, optionally add a `220 Ω` series resistor to `D6` as input protection.
+- Expected voltage at the divider node: ~5V * (2k / (1k + 2k)) ≈ 3.33 V — safe for the ESP8266.
+
+Notes:
+- Ensure HC-SR04 `VCC` is 5V (DC-DC output) and all grounds are common.
+- `TRIG` connects directly to `D5`.
+- The optional `220 Ω` protects the ESP input from brief currents; it is recommended when available.
 
 ### STEP 11: Connect Motors
 - [ ] Motor (-) → Terminal Block Negative (GND)
